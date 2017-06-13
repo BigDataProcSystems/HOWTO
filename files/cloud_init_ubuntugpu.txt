@@ -1,0 +1,55 @@
+#cloud-config
+packages:
+    - mdadm
+    - iotop
+    - iftop
+    - sysstat
+disk_setup:
+    ephemeral0:
+        table_type: mbr
+        layout: [100]
+        overwrite: True
+    /dev/sdc:
+        table_type: mbr
+        layout: [100]
+        overwrite: True
+    /dev/sdd:
+        table_type: mbr
+        layout: [100]
+        overwrite: True
+    /dev/sde:
+        table_type: mbr
+        layout: [100]
+        overwrite: True
+    /dev/sdf:
+        table_type: mbr
+        layout: [100]
+        overwrite: True
+fs_setup:
+    - device: ephemeral0.1
+      filesystem: ext4
+mounts:
+    - ["ephemeral0.1", "/mnt", "auto", "defaults", "0", "0"]
+runcmd:
+    - systemctl stop apt-daily.service
+    - systemctl kill --kill-who=all apt-daily.service
+    - while ! (systemctl list-units --all apt-daily.service | fgrep -q dead) do sleep 1; done
+    - systemctl stop apt-daily.timer
+    - systemctl disable apt-daily.service
+    - systemctl disable apt-daily.timer
+    - systemctl daemon-reload
+    - apt-get remove unattended-upgrades -y
+    - [lsblk]
+    - [mdadm, --create, --verbose, /dev/md127, --level=0, --name=MY_RAID, --raid-devices=4, /dev/sdc1, /dev/sdd1, /dev/sde1, /dev/sdf1]
+    - [mkfs.ext4, "-L", "MY_RAID", /dev/md127]
+    - [mkdir, /data]
+    - echo "LABEL=MY_RAID /data ext4 defaults,nofail 0 2" >> /etc/fstab
+    - [mount, "-a"]
+    - [chmod, go+w, /data]
+    - [chmod, go+w, /mnt]
+    - chown -R ubuntu /usr/local/backup
+    - cp -rT /usr/local/backup /home/ubuntu
+    - cd /home/ubuntu && git clone https://github.com/ZEMUSHKA/lsml_hse.git
+    - chown -R ubuntu:ubuntu /home/ubuntu/lsml_hse
+    - apt-get install libcupti-dev -y
+    - pip install tensorflow-gpu==1.1.0 --upgrade
