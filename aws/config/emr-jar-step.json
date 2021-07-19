@@ -1,0 +1,11 @@
+[
+  {
+     "Name": "Average Product Rating Step",
+     "Type": "CUSTOM_JAR",
+     "ActionOnFailure": "TERMINATE_CLUSTER",
+     "Jar": "s3://aws-bigdata/ProdAvgRatingApp.jar",
+     "Args": [
+         "s3://aws-bigdata/data/reviews_Electronics_5.json",
+         "s3://aws-bigdata/output_avg"]
+  }
+]
